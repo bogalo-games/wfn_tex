@@ -9,12 +9,29 @@
 
 namespace wfn_eng::tex::loader {
     /**
-     * Fills the Texture at the reference provided with the information located
-     * at the path provided.
+     * Fills a Texture at the reference provided with the data from an input
+     * stream.
      */
-    void fillTexture(Texture& texture, std::string path) {
-        stbi_uc *pixels = stbi_load(
-            path.c_str(),
+    void fillTexture(Texture& texture, std::istream& input) {
+        stbi_io_callbacks callbacks {
+            .eof = [](void *pInput) {
+                auto& input = *reinterpret_cast<std::istream *>(pInput);
+                return static_cast<int>(input.eof());
+            },
+
+            .read = [](void *pInput, char *data, int size) {
+                // TODO: Read thing
+                return 0;
+            },
+
+            .skip = [](void *pInput, int size) {
+                // TODO: Skip thing
+            }
+        };
+
+        stbi_uc *pixels = stbi_load_from_callbacks(
+            &callbacks,
+            &input,
             &texture.width,
             &texture.height,
             &texture.channels,
@@ -27,16 +44,12 @@ namespace wfn_eng::tex::loader {
     }
 
     /**
-     * Loads a Texture from a location on disk.
-     *
-     * Note that because this copies the texture in returning from the function,
-     * this will incur performance hits that fillTexture does not.
+     * Fills the Texture at the reference provided with the information located
+     * at the path provided.
      */
-    Texture loadTexture(std::string path) {
-        Texture tex;
-        fillTexture(tex, path);
-
-        return tex;
+    void fillTexture(Texture& texture, std::string path) {
+        std::ifstream file(path);
+        fillTexture(texture, file);
     }
 
     /**
@@ -76,17 +89,5 @@ namespace wfn_eng::tex::loader {
         for (size_t i; i < textureCount; i++) {
             // TODO: Read in? how do I do this with the current texture API?
         }
-    }
-
-    /**
-     * Loads an Animation from a location on disk.
-     *
-     * Same warning as loadTexture for performance hit.
-     */
-    Animation loadAnimation(std::string path) {
-        Animation anim;
-        fillAnimation(anim, path);
-
-        return anim;
     }
 }
